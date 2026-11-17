@@ -2,6 +2,9 @@
 
 Задача 2.2: разширете модула с функциите от README.md на урока.
 """
+import copy
+
+TEACHER_DISCOUNT = 0.10
 
 STOCK = {
     "банан":   {"cena": 1.20, "kolichestvo": 10},
@@ -60,13 +63,62 @@ def low_stock(stock: dict, threshold: int = 5) -> list:
                   if item["kolichestvo"] <= threshold)
 
 
-# ---------------------------------------------------------------
-# ЗАДАЧА 2.2: добавете тук PriceError, deliver, apply_discount
-# и daily_report. Условието е в README.md на урока.
-# ---------------------------------------------------------------
+class PriceError(BufetError):
+    """Цената трябва да е по-голяма от нула. Носи името на продукта и цената."""
+
+    def __init__(self, name, cena):
+        super().__init__(f"Невалидна цена {cena} за '{name}': трябва да е по-голяма от 0")
+        self.name, self.cena = name, cena
+
+
+def deliver(stock: dict, name: str, quantity: int, cena: float = None) -> int:
+    """Добавя quantity броя от name и връща новата наличност.
+
+    За нов продукт цената е задължителна. Ако продуктът вече има запис и е
+    дадена цена, тя става новата му цена. Ако се вдигне изключение, наличността
+    не се променя. Вдига ValueError при quantity <= 0, UnknownProduct за нов
+    продукт без цена и PriceError при цена <= 0.
+    """
+    if quantity <= 0:
+        raise ValueError("Количеството трябва да е положително цяло число")
+    if name not in stock and cena is None:
+        raise UnknownProduct(f"'{name}' е нов продукт: трябва да се зададе цена")
+    if cena is not None and cena <= 0:
+        raise PriceError(name, cena)
+    item = stock.setdefault(name, {"cena": cena, "kolichestvo": 0})
+    if cena is not None:
+        item["cena"] = cena
+    item["kolichestvo"] += quantity
+    return item["kolichestvo"]
+
+
+def apply_discount(total: float, is_teacher: bool) -> float:
+    """Връща сумата за плащане: 10% отстъпка за учители, закръглена до стотинка."""
+    if is_teacher:
+        total *= 1 - TEACHER_DISCOUNT
+    return round(total, 2)
+
+
+def daily_report(stock: dict) -> dict:
+    """Връща справка за наличността: обща стойност, най-скъп продукт, изчерпани."""
+    return {
+        "obshta_stoynost": round(sum(i["cena"] * i["kolichestvo"] for i in stock.values()), 2),
+        "nay_skap": max(stock, key=lambda name: stock[name]["cena"], default=None),
+        "izcherpani": sum(1 for item in stock.values() if item["kolichestvo"] == 0),
+    }
+
+
+def run_scenario(title: str, action) -> str:
+    """Изпълнява един сценарий и връща едно изречение за резултата или за грешката."""
+    try:
+        result = action()
+    except (BufetError, ValueError) as err:
+        return f"{title}: {type(err).__name__} — {err}"
+    return f"{title}: {result}"
 
 
 if __name__ == "__main__":
+    original = copy.deepcopy(STOCK)  # чисто копие за сценариите, преди бележката да промени STOCK
     order = [("банан", 2), ("кроасан", 1), ("сандвич", 1),
              ("пица", 1), ("вода", -3), ("вода", 2)]
     total, lines, problems = receipt(STOCK, order)
@@ -83,5 +135,26 @@ if __name__ == "__main__":
 
     print(f"\nЗА ДОСТАВКА: {', '.join(low_stock(STOCK))}")
 
-    # ЗАДАЧА 2.2: добавете тук поне 6 сценария с новите функции,
-    # включително три, които предизвикват различни изключения.
+    scenarios = [
+        ("1. Доставка на кроасан (4 + 6)",
+         lambda: deliver(copy.deepcopy(original), "кроасан", 6)),
+        ("2. Нов продукт йогурт с цена",
+         lambda: deliver(copy.deepcopy(original), "йогурт", 12, cena=1.60)),
+        ("3. Нов продукт без цена",
+         lambda: deliver(copy.deepcopy(original), "йогурт", 12)),
+        ("4. Нов продукт с цена 0",
+         lambda: deliver(copy.deepcopy(original), "йогурт", 12, cena=0)),
+        ("5. Доставка на 0 броя",
+         lambda: deliver(copy.deepcopy(original), "банан", 0)),
+        ("6. Сметка 6.70 лв. за учител",
+         lambda: apply_discount(6.70, True)),
+        ("7. Сметка 6.70 лв. за ученик",
+         lambda: apply_discount(6.70, False)),
+        ("8. Справка за деня",
+         lambda: daily_report(copy.deepcopy(original))),
+        ("9. Справка за празен бюфет",
+         lambda: daily_report({})),
+    ]
+    print("\nСЦЕНАРИИ")
+    for title, action in scenarios:
+        print("  " + run_scenario(title, action))
