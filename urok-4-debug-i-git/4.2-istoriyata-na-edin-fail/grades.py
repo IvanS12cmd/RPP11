@@ -20,6 +20,16 @@ def average(grades):
     return total / len(grades)
 
 
+def median(grades):
+    """Медиана на оценките. None, ако няма оценки."""
+    if not grades:
+        return None
+    ordered = sorted(grades)
+    middle = len(ordered) // 2
+    if len(ordered) % 2 == 1:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2
+
 def is_excellent(avg):
     """Отличен е успех 5.50 и по-висок. Без оценки (None) не е отличен."""
     return avg is not None and avg >= EXCELLENT_FROM
@@ -59,6 +69,4 @@ def print_report(students):
     print(f"Брой отличници: {sum(1 for _, avg in ranked if is_excellent(avg))}")
 
 
-if __name__ == "__main__":
-    print_report(STUDENTS)
-    print(f"Най-добър ученик: {ranking(STUDENTS)[0][0]}")
+print(f"Медиана на оценките на Ани: {median(STUDENTS['Ани'])}")
