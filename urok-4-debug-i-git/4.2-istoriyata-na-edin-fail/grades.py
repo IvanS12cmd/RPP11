@@ -70,3 +70,5 @@ def print_report(students):
 
 
 print(f"Медиана на оценките на Ани: {median(STUDENTS['Ани'])}")
+
+# Проба
