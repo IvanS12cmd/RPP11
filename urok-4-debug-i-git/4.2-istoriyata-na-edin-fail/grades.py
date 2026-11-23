@@ -68,7 +68,7 @@ def print_report(students):
     print("Среден успех на класа: " + ("няма оценки" if class_avg is None else f"{class_avg:.2f}"))
     print(f"Брой отличници: {sum(1 for _, avg in ranked if is_excellent(avg))}")
 
-
-print(f"Медиана на оценките на Ани: {median(STUDENTS['Ани'])}")
-
-# Проба
+if __name__ == "__main__":
+    print_report(STUDENTS)
+    print(f"Най-добър ученик: {ranking(STUDENTS)[0][0]}")
+    print(f"Медиана на оценките на Ани: {median(STUDENTS['Ани'])}")
