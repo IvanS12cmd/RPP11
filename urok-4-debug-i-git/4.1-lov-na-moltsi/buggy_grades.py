@@ -7,8 +7,13 @@ STUDENTS = {
     "Диана": [6, 6, 6],
 }
 
+EXCELLENT_FROM = 5.50
+
 
 def average(grades):
+    """Среден успех. None, ако няма нито една оценка."""
+    if not grades:
+        return None
     total = 0
     for g in grades:
         total += g
@@ -16,29 +21,42 @@ def average(grades):
 
 
 def is_excellent(avg):
-    return avg > 5.50
+    """Отличен е успех 5.50 и по-висок. Без оценки (None) не е отличен."""
+    return avg is not None and avg >= EXCELLENT_FROM
 
 
 def ranking(students):
+    """Двойки (име, успех) от най-добрия към най-слабия.
+
+    Учениците без оценки (успех None) са накрая.
+    """
     result = []
     for name in students:
         result.append((name, average(students[name])))
-    result.sort(key=lambda pair: pair[1])
+    result.sort(key=lambda pair: (pair[1] is None, -(pair[1] or 0)))
     return result
+
+
+def collect_grades(students):
+    """Всички оценки на всички ученици в един списък."""
+    all_grades = []
+    for name in students:
+        all_grades += students[name]
+    return all_grades
 
 
 def print_report(students):
     print("КЛАСАЦИЯ")
-    position = 0
-    for name, avg in ranking(students):
-        position += 1
+    ranked = ranking(students)
+    for position, (name, avg) in enumerate(ranked, start=1):
+        if avg is None:
+            print(f"{position}. {name:10s} няма оценки")
+            continue
         mark = " *" if is_excellent(avg) else ""
         print(f"{position}. {name:10s} {avg:.2f}{mark}")
-    all_grades = []
-    for name in students:
-        all_grades = students[name]
-    print(f"Среден успех на класа: {average(all_grades):.2f}")
-    print(f"Брой отличници: {len(students) - position}")
+    class_avg = average(collect_grades(students))
+    print("Среден успех на класа: " + ("няма оценки" if class_avg is None else f"{class_avg:.2f}"))
+    print(f"Брой отличници: {sum(1 for _, avg in ranked if is_excellent(avg))}")
 
 
 if __name__ == "__main__":
